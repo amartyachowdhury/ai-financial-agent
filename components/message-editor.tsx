@@ -19,6 +19,12 @@ export type MessageEditorProps = {
   ) => Promise<string | null | undefined>;
 };
 
+// Helper function to validate UUID format
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 export function MessageEditor({
   message,
   setMode,
@@ -74,7 +80,12 @@ export function MessageEditor({
           disabled={isSubmitting}
           onClick={async () => {
             setIsSubmitting(true);
-            const messageId = userMessageIdFromServer ?? message.id;
+            
+            // Use userMessageIdFromServer only if it's a valid UUID, otherwise use message.id
+            let messageId = message.id;
+            if (userMessageIdFromServer && isValidUUID(userMessageIdFromServer)) {
+              messageId = userMessageIdFromServer;
+            }
 
             if (!messageId) {
               toast.error('Something went wrong, please try again!');
