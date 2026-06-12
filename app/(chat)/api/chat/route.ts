@@ -27,6 +27,10 @@ import {
 
 import { generateTitleFromUserMessage } from '../../actions';
 import { AISDKExporter } from 'langsmith/vercel';
+import {
+  resolveFinancialDatasetsApiKey,
+  resolveOpenAIApiKey,
+} from '@/lib/server/api-keys';
 import { 
   FinancialToolsManager, 
   financialTools, 
@@ -65,8 +69,15 @@ export async function POST(request: Request) {
     return new Response('Model not found', { status: 404 });
   }
 
-  if (!modelApiKey) {
+  const resolvedModelApiKey = resolveOpenAIApiKey(modelApiKey);
+  const resolvedFinancialApiKey = resolveFinancialDatasetsApiKey(financialDatasetsApiKey);
+
+  if (!resolvedModelApiKey) {
     return new Response('Model API key is required', { status: 400 });
+  }
+
+  if (!resolvedFinancialApiKey) {
+    return new Response('Financial Datasets API key is required', { status: 400 });
   }
 
   const coreMessages = convertToCoreMessages(messages);
@@ -79,7 +90,7 @@ export async function POST(request: Request) {
   const chat = await getChatById({ id });
 
   if (!chat) {
-    const title = await generateTitleFromUserMessage({ message: userMessage, modelApiKey });
+    const title = await generateTitleFromUserMessage({ message: userMessage, modelApiKey: resolvedModelApiKey });
     await saveChat({ id, userId: session.user.id, title });
   }
 
@@ -95,7 +106,7 @@ export async function POST(request: Request) {
     execute: async (dataStream) => {
       // Initialize the financial tools manager
       const financialToolsManager = new FinancialToolsManager({
-        financialDatasetsApiKey: financialDatasetsApiKey!,
+        financialDatasetsApiKey: resolvedFinancialApiKey,
         dataStream,
       });
       dataStream.writeData({
@@ -112,7 +123,7 @@ export async function POST(request: Request) {
       });
 
       const { object } = await generateObject({
-        model: customModel('gpt-4.1-nano-2025-04-14', modelApiKey),
+        model: customModel('gpt-4.1-nano-2025-04-14', resolvedModelApiKey),
         output: 'array',
         schema: z.object({
           task_name: z.string(),
@@ -174,7 +185,7 @@ export async function POST(request: Request) {
       }
 
       const result = streamText({
-        model: customModel(model.apiIdentifier, modelApiKey),
+        model: customModel(model.apiIdentifier, resolvedModelApiKey),
         tools: financialToolsManager.getTools(),
         system: systemPrompt,
         messages: coreMessagesWithTaskNames,

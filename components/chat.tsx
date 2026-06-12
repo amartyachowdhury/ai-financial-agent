@@ -15,7 +15,6 @@ import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { useBlockSelector } from '@/hooks/use-block';
-import { ApiKeysModal } from '@/components/api-keys-modal';
 
 export function Chat({
   id,
@@ -33,7 +32,6 @@ export function Chat({
   const { mutate } = useSWRConfig();
   const financialDatasetsApiKey = getFinancialDatasetsApiKey();
   const openAIApiKey = getLocalOpenAIApiKey();
-  const [showApiKeysModal, setShowApiKeysModal] = useState(false);
 
   const {
     messages,
@@ -70,30 +68,8 @@ export function Chat({
       event.preventDefault();
     }
 
-    try {
-      // Only check message count if we have a local API key
-      const response = await fetch('/api/messages/count');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-
-      // Check if user has reached their free message limit
-      const maxFreeMessageCount = 0;
-      const localApiKey = getLocalOpenAIApiKey();
-      if (data.count >= maxFreeMessageCount && !localApiKey) {
-        setShowApiKeysModal(true);
-        return;
-      }
-
-      // Track the message submission
-      track('chat_message_submit');
-
-      handleSubmit(event, chatRequestOptions);
-    } catch (error) {
-      console.error('Error checking message count:', error);
-    }
+    track('chat_message_submit');
+    handleSubmit(event, chatRequestOptions);
   };
 
   const { data: votes } = useSWR<Array<Vote>>(
@@ -161,12 +137,6 @@ export function Chat({
         isReadonly={isReadonly}
       />
 
-      <ApiKeysModal 
-        open={showApiKeysModal} 
-        onOpenChange={setShowApiKeysModal}
-        title="Message Limit Reached"
-        description="You have reached your free message limit. Please add your OpenAI API key to continue using the chat."
-      />
     </>
   );
 }
