@@ -10,16 +10,26 @@ interface QueryLoadingState {
 
 const initialState: QueryLoadingState = {
   isLoading: false,
-  taskNames: []
+  taskNames: [],
 };
 
-// Add type for selector function
 type Selector<T> = (state: QueryLoadingState) => T;
 
-export function useQueryLoadingSelector<Selected>(selector: Selector<Selected>) {
-  const { data: loadingState } = useSWR<QueryLoadingState>('query-loading', null, {
-    fallbackData: initialState,
-  });
+function getQueryLoadingKey(chatId: string) {
+  return `query-loading:${chatId}`;
+}
+
+export function useQueryLoadingSelector<Selected>(
+  chatId: string,
+  selector: Selector<Selected>,
+) {
+  const { data: loadingState } = useSWR<QueryLoadingState>(
+    getQueryLoadingKey(chatId),
+    null,
+    {
+      fallbackData: initialState,
+    },
+  );
 
   const selectedValue = useMemo(() => {
     if (!loadingState) return selector(initialState);
@@ -29,14 +39,11 @@ export function useQueryLoadingSelector<Selected>(selector: Selector<Selected>) 
   return selectedValue;
 }
 
-export function useQueryLoading() {
-  const { data: loadingState, mutate: setLoadingState } = useSWR<QueryLoadingState>(
-    'query-loading',
-    null,
-    {
+export function useQueryLoading(chatId: string) {
+  const { data: loadingState, mutate: setLoadingState } =
+    useSWR<QueryLoadingState>(getQueryLoadingKey(chatId), null, {
       fallbackData: initialState,
-    },
-  );
+    });
 
   const state = useMemo(() => {
     if (!loadingState) return initialState;
@@ -46,9 +53,9 @@ export function useQueryLoading() {
   const setQueryLoading = (isLoading: boolean, taskNames: string[] = []) => {
     setLoadingState({
       isLoading,
-      taskNames
+      taskNames,
     });
   };
 
   return { state, setQueryLoading };
-} 
+}

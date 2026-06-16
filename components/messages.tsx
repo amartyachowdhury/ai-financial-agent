@@ -32,7 +32,7 @@ function PureMessages({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const queryLoadingState = useQueryLoadingSelector((state) => state);
+  const queryLoadingState = useQueryLoadingSelector(chatId, (state) => state);
 
   const loadingMessages =
     queryLoadingState.taskNames.length > 0 ? queryLoadingState.taskNames : [];
@@ -56,7 +56,8 @@ function PureMessages({
         />
       ))}
 
-      {(isLoading || queryLoadingState.isLoading) &&
+      {isLoading &&
+        !queryLoadingState.isLoading &&
         messages.length > 0 &&
         messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 

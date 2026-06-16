@@ -14,8 +14,8 @@ import type {
 export function DataStreamHandler({ id }: { id: string }) {
   const { data: dataStream } = useChat({ id });
   const { setUserMessageIdFromServer } = useUserMessageId();
-  const { setToolLoading } = useToolLoading();
-  const { setQueryLoading } = useQueryLoading();
+  const { setToolLoading } = useToolLoading(id);
+  const { setQueryLoading } = useQueryLoading(id);
   const lastProcessedIndex = useRef(-1);
 
   useEffect(() => {

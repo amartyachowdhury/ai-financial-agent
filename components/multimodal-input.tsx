@@ -355,7 +355,7 @@ function PureMultimodalInput({
 
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
         {isLoading ? (
-          <StopButton stop={stop} setMessages={setMessages} />
+          <StopButton chatId={chatId} stop={stop} setMessages={setMessages} />
         ) : (
           <SendButton
             input={input}
@@ -404,13 +404,15 @@ function PureAttachmentsButton({
 const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureStopButton({
+  chatId,
   stop,
   setMessages,
 }: {
+  chatId: string;
   stop: () => void;
   setMessages: Dispatch<SetStateAction<Array<Message>>>;
 }) {
-  const { setQueryLoading } = useQueryLoading();
+  const { setQueryLoading } = useQueryLoading(chatId);
 
   return (
     <Button

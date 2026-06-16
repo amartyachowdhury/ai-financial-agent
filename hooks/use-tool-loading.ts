@@ -31,13 +31,23 @@ const initialState: ToolLoadingState = {
   getNews: { loading: false },
 };
 
-// Add type for selector function
 type Selector<T> = (state: ToolLoadingState) => T;
 
-export function useToolLoadingSelector<Selected>(selector: Selector<Selected>) {
-  const { data: loadingState } = useSWR<ToolLoadingState>('tool-loading', null, {
-    fallbackData: initialState,
-  });
+function getToolLoadingKey(chatId: string) {
+  return `tool-loading:${chatId}`;
+}
+
+export function useToolLoadingSelector<Selected>(
+  chatId: string,
+  selector: Selector<Selected>,
+) {
+  const { data: loadingState } = useSWR<ToolLoadingState>(
+    getToolLoadingKey(chatId),
+    null,
+    {
+      fallbackData: initialState,
+    },
+  );
 
   const selectedValue = useMemo(() => {
     if (!loadingState) return selector(initialState);
@@ -47,14 +57,11 @@ export function useToolLoadingSelector<Selected>(selector: Selector<Selected>) {
   return selectedValue;
 }
 
-export function useToolLoading() {
-  const { data: loadingState, mutate: setLoadingState } = useSWR<ToolLoadingState>(
-    'tool-loading',
-    null,
-    {
+export function useToolLoading(chatId: string) {
+  const { data: loadingState, mutate: setLoadingState } =
+    useSWR<ToolLoadingState>(getToolLoadingKey(chatId), null, {
       fallbackData: initialState,
-    },
-  );
+    });
 
   const state = useMemo(() => {
     if (!loadingState) return initialState;
@@ -73,4 +80,4 @@ export function useToolLoading() {
   };
 
   return { state, setToolLoading };
-} 
+}

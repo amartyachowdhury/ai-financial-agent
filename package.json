@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
     "format": "biome format --write",
