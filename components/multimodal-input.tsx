@@ -1,11 +1,6 @@
 'use client';
 
-import type {
-  Attachment,
-  ChatRequestOptions,
-  CreateMessage,
-  Message,
-} from 'ai';
+import type { ChatRequestOptions, CreateMessage, Message } from 'ai';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -15,7 +10,6 @@ import {
   useCallback,
   type Dispatch,
   type SetStateAction,
-  type ChangeEvent,
   memo,
 } from 'react';
 import { toast } from 'sonner';
@@ -23,12 +17,10 @@ import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
 import { sanitizeUIMessages } from '@/lib/utils';
 
-import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
-import { PreviewAttachment } from './preview-attachment';
+import { ArrowUpIcon, StopIcon } from './icons';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
-import equal from 'fast-deep-equal';
 import { TickerSuggestions } from './ticker-suggestions';
 import { useQueryLoading } from '@/hooks/use-query-loading';
 
@@ -40,8 +32,6 @@ function PureMultimodalInput({
   setInput,
   isLoading,
   stop,
-  attachments,
-  setAttachments,
   messages,
   setMessages,
   append,
@@ -53,8 +43,6 @@ function PureMultimodalInput({
   setInput: (value: string) => void;
   isLoading: boolean;
   stop: () => void;
-  attachments: Array<Attachment>;
-  setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
   messages: Array<Message>;
   setMessages: Dispatch<SetStateAction<Array<Message>>>;
   append: (
@@ -93,7 +81,6 @@ function PureMultimodalInput({
   useEffect(() => {
     if (textareaRef.current) {
       const domValue = textareaRef.current.value;
-      // Prefer DOM value over localStorage to handle hydration
       const finalValue = domValue || localStorageInput || '';
       setInput(finalValue);
       adjustHeight();
@@ -113,18 +100,16 @@ function PureMultimodalInput({
     setInput(newValue);
     adjustHeight();
 
-    // Handle ticker suggestions
     const lastAtIndex = newValue.lastIndexOf('@');
     if (lastAtIndex !== -1) {
       const textAfterAt = newValue.slice(lastAtIndex + 1);
       const match = textAfterAt.match(/^[A-Za-z]*$/);
-      
+
       if (match) {
         setShowTickerSuggestions(true);
         setTickerFilter(textAfterAt);
-        setSelectedIndex(0); // Reset selection when filter changes
-        
-        // Calculate menu position
+        setSelectedIndex(0);
+
         const textarea = textareaRef.current;
         if (textarea) {
           const textBeforeCursor = newValue.slice(0, textarea.selectionStart);
@@ -134,18 +119,23 @@ function PureMultimodalInput({
           span.style.position = 'absolute';
           span.textContent = textBeforeCursor;
           document.body.appendChild(span);
-          
+
           const rect = textarea.getBoundingClientRect();
-          const lineHeight = Number.parseInt(window.getComputedStyle(textarea).lineHeight);
+          const lineHeight = Number.parseInt(
+            window.getComputedStyle(textarea).lineHeight,
+          );
           const lines = textBeforeCursor.split('\n');
           const currentLineNumber = lines.length - 1;
-          
+
           setMenuPosition({
-            // Position the menu above the cursor
-            top: rect.top + window.scrollY + (currentLineNumber * lineHeight) - 8,
+            top:
+              rect.top +
+              window.scrollY +
+              currentLineNumber * lineHeight -
+              8,
             left: rect.left + span.offsetWidth - textBeforeCursor.length * 2,
           });
-          
+
           document.body.removeChild(span);
         }
       } else {
@@ -156,87 +146,24 @@ function PureMultimodalInput({
     }
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
-
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
-    });
+    handleSubmit(undefined);
 
-    setAttachments([]);
     setLocalStorageInput('');
 
     if (width && width > 768) {
       textareaRef.current?.focus();
     }
-  }, [
-    attachments,
-    handleSubmit,
-    setAttachments,
-    setLocalStorageInput,
-    width,
-    chatId,
-  ]);
-
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
-      }
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (error) {
-      toast.error('Failed to upload file, please try again!');
-    }
-  };
-
-  const handleFileChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || []);
-
-      setUploadQueue(files.map((file) => file.name));
-
-      try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
-        );
-
-        setAttachments((currentAttachments) => [
-          ...currentAttachments,
-          ...successfullyUploadedAttachments,
-        ]);
-      } catch (error) {
-        console.error('Error uploading files!', error);
-      } finally {
-        setUploadQueue([]);
-      }
-    },
-    [setAttachments],
-  );
+  }, [handleSubmit, setLocalStorageInput, width, chatId]);
 
   const [showTickerSuggestions, setShowTickerSuggestions] = useState(false);
   const [tickerFilter, setTickerFilter] = useState('');
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   const handleTickerSelect = (ticker: string) => {
     const parts = input.split('@');
@@ -249,8 +176,8 @@ function PureMultimodalInput({
     }
   };
 
-  const filteredSuggestions = TICKER_SUGGESTIONS.filter(ticker => 
-    ticker.toLowerCase().startsWith(tickerFilter.toLowerCase())
+  const filteredSuggestions = TICKER_SUGGESTIONS.filter((ticker) =>
+    ticker.toLowerCase().startsWith(tickerFilter.toLowerCase()),
   );
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -258,14 +185,14 @@ function PureMultimodalInput({
       switch (event.key) {
         case 'ArrowUp':
           event.preventDefault();
-          setSelectedIndex((prev) => 
-            prev > 0 ? prev - 1 : filteredSuggestions.length - 1
+          setSelectedIndex((prev) =>
+            prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
           );
           break;
         case 'ArrowDown':
           event.preventDefault();
-          setSelectedIndex((prev) => 
-            prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+          setSelectedIndex((prev) =>
+            prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
           );
           break;
         case 'Enter':
@@ -291,39 +218,8 @@ function PureMultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-4">
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <SuggestedActions append={append} chatId={chatId} />
-        )}
-
-      <input
-        type="file"
-        className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
-        ref={fileInputRef}
-        multiple
-        onChange={handleFileChange}
-        tabIndex={-1}
-      />
-
-      {(attachments.length > 0 || uploadQueue.length > 0) && (
-        <div className="flex flex-row gap-2 overflow-x-scroll items-end">
-          {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
-          ))}
-
-          {uploadQueue.map((filename) => (
-            <PreviewAttachment
-              key={filename}
-              attachment={{
-                url: '',
-                name: filename,
-                contentType: '',
-              }}
-              isUploading={true}
-            />
-          ))}
-        </div>
+      {messages.length === 0 && (
+        <SuggestedActions append={append} chatId={chatId} />
       )}
 
       {showTickerSuggestions && (
@@ -349,19 +245,11 @@ function PureMultimodalInput({
         autoFocus
       />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-        <AttachmentsButton fileInputRef={fileInputRef} isLoading={isLoading} />
-      </div>
-
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
         {isLoading ? (
           <StopButton chatId={chatId} stop={stop} setMessages={setMessages} />
         ) : (
-          <SendButton
-            input={input}
-            submitForm={submitForm}
-            uploadQueue={uploadQueue}
-          />
+          <SendButton input={input} submitForm={submitForm} />
         )}
       </div>
     </div>
@@ -373,35 +261,10 @@ export const MultimodalInput = memo(
   (prevProps, nextProps) => {
     if (prevProps.input !== nextProps.input) return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (!equal(prevProps.attachments, nextProps.attachments)) return false;
 
     return true;
   },
 );
-
-function PureAttachmentsButton({
-  fileInputRef,
-  isLoading,
-}: {
-  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  isLoading: boolean;
-}) {
-  return (
-    <Button
-      className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
-      onClick={(event) => {
-        event.preventDefault();
-        fileInputRef.current?.click();
-      }}
-      disabled={isLoading}
-      variant="ghost"
-    >
-      <PaperclipIcon size={14} />
-    </Button>
-  );
-}
-
-const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureStopButton({
   chatId,
@@ -434,11 +297,9 @@ const StopButton = memo(PureStopButton);
 function PureSendButton({
   submitForm,
   input,
-  uploadQueue,
 }: {
   submitForm: () => void;
   input: string;
-  uploadQueue: Array<string>;
 }) {
   return (
     <Button
@@ -447,7 +308,7 @@ function PureSendButton({
         event.preventDefault();
         submitForm();
       }}
-      disabled={input.length === 0 || uploadQueue.length > 0}
+      disabled={input.length === 0}
     >
       <ArrowUpIcon size={14} />
     </Button>
@@ -455,8 +316,6 @@ function PureSendButton({
 }
 
 const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
-  if (prevProps.uploadQueue.length !== nextProps.uploadQueue.length)
-    return false;
   if (prevProps.input !== nextProps.input) return false;
   return true;
 });

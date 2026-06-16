@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { models } from '@/lib/ai/models';
+import { models, MODEL_TIER_LABELS } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
@@ -60,7 +60,12 @@ export function ModelSelector({
             data-active={model.id === optimisticModelId}
           >
             <div className="flex flex-col gap-1 items-start">
-              {model.label}
+              <div className="flex items-center gap-2">
+                <span>{model.label}</span>
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {MODEL_TIER_LABELS[model.tier]}
+                </span>
+              </div>
               {model.description && (
                 <div className="text-xs text-muted-foreground">
                   {model.description}

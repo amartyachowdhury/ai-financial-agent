@@ -86,6 +86,10 @@ On first visit, the app sets a `fingerprint` cookie in your browser and creates 
 
 For production rate limiting, configure optional Upstash Redis env vars (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`). Without them, the app falls back to per-instance in-memory limits suitable for local development.
 
+Set `ENABLE_TASK_BREAKDOWN=true` to show step-by-step research tasks before each response. This adds an extra LLM call per message and increases latency/cost.
+
+The default model is GPT 4.1 nano (lower cost). Use the model selector in the chat header to switch tiers.
+
 ## Run the Agent
 
 After completing the steps above, simply run the following command to start the development server:

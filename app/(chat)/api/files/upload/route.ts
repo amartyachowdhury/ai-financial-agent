@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/app/(auth)/auth';
 import { uploadFileSchema } from '@/lib/api/validation';
+import { buildUploadPath } from '@/lib/server/upload-path';
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -33,12 +34,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    // Get filename from formData since Blob doesn't have name property
-    const filename = (formData.get('file') as File).name;
     const fileBuffer = await file.arrayBuffer();
+    const uploadPath = buildUploadPath(file.type);
 
     try {
-      const data = await put(`${filename}`, fileBuffer, {
+      const data = await put(uploadPath, fileBuffer, {
         access: 'public',
       });
 
