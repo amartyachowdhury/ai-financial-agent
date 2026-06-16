@@ -9,7 +9,7 @@ import { PlusIcon } from './icons';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { VisibilityType, VisibilitySelector } from './visibility-selector';
+import { type VisibilityType, VisibilitySelector } from './visibility-selector';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 function PureChatHeader({

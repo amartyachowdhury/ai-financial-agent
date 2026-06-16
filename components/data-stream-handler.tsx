@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { useUserMessageId } from '@/hooks/use-user-message-id';
 import { useToolLoading } from '@/hooks/use-tool-loading';
 import { useQueryLoading } from '@/hooks/use-query-loading';
-import {
+import type {
   DataStreamDelta,
   QueryLoadingContent,
   ToolLoadingContent,

@@ -76,6 +76,14 @@ LANGCHAIN_PROJECT=ai-financial-agent
 
 **Important**: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various OpenAI and authentication provider accounts.
 
+## Authentication
+
+This demo uses **anonymous fingerprint-based auth** — there is no email/password login.
+
+On first visit, the app sets a `fingerprint` cookie in your browser and creates a corresponding user in the database. Returning visits restore the same session from that cookie, so your chat history persists on the same device and browser.
+
+`AUTH_SECRET` is required for NextAuth session signing. No OAuth or credential provider setup is needed for the demo.
+
 ## Run the Agent
 
 After completing the steps above, simply run the following command to start the development server:
@@ -101,7 +109,7 @@ If you do not want to use the Financial Datasets API, you can easily switch to a
 
 You can deploy your own version of the AI Financial Agent in production via Vercel with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvirattt%2Fai-financial-agent&env=AUTH_SECRET,OPENAI_API_KEY&envDescription=Learn%20more%20about%20how%20to%20get%20the%20API%20Keys%20for%20the%20application&envLink=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-financial-agent%2Fblob%2Fmain%2F.env.example&demo-title=AI%20Financial%20Agent&demo-description=An%20open-source%20financial%20agent%20chat%20template%20built%20with%20the%20AI%20SDK%20by%20Vercel%20and%20Financial%20Datasets%20API.&demo-url=https%3A%2F%2Fchat.vercel.ai&stores=[{%22type%22:%22postgres%22},{%22type%22:%22blob%22}])
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvirattt%2Fai-financial-agent&env=AUTH_SECRET,OPENAI_API_KEY&envDescription=Learn%20more%20about%20how%20to%20get%20the%20API%20Keys%20for%20the%20application&envLink=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-financial-agent%2Fblob%2Fmain%2F.env.example&demo-title=AI%20Financial%20Agent&demo-description=An%20open-source%20financial%20agent%20chat%20template%20built%20with%20the%20AI%20SDK%20by%20Vercel%20and%20Financial%20Datasets%20API.&demo-url=https%3A%2F%2Fchat.financialdatasets.ai&stores=[{%22type%22:%22postgres%22},{%22type%22:%22blob%22}])
 
 If you want to deploy your own version of the AI Financial Agent in production, you need to link your local instance with your Vercel and GitHub accounts.
 

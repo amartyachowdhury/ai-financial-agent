@@ -19,7 +19,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { Download } from 'lucide-react';
-import { Blue, ElectricViolet, Green } from './styles/colors';
+import { Green } from './styles/colors';
 import { exportToCsv } from '@/lib/utils/export-csv';
 import { Button } from './ui/button';
 import { IncomeStatementsTable } from './income-statements-table';

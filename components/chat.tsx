@@ -17,7 +17,7 @@ import {
 
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
-import { VisibilityType } from './visibility-selector';
+import type { VisibilityType } from './visibility-selector';
 
 export function Chat({
   id,

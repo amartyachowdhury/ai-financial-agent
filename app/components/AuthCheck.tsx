@@ -1,17 +1,29 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { login } from '@/app/(auth)/actions'
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useRef } from 'react';
+
+import { ensureSession } from '@/app/(auth)/actions';
 
 export function AuthCheck() {
-  const { data: session } = useSession()
+  const { status } = useSession();
+  const router = useRouter();
+  const attemptedRef = useRef(false);
 
   useEffect(() => {
-    if (!session) {
-      login({status: 'idle'}, new FormData())
+    if (status !== 'unauthenticated' || attemptedRef.current) {
+      return;
     }
-  }, [session])
 
-  return null
-} 
+    attemptedRef.current = true;
+
+    void ensureSession({ status: 'idle' }).then((result) => {
+      if (result.status === 'success') {
+        router.refresh();
+      }
+    });
+  }, [status, router]);
+
+  return null;
+}

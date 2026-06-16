@@ -1,4 +1,4 @@
-import { unstable_cache } from 'next/cache';
+
 
 export const regularPrompt = `You are a friendly financial assistant. Keep your responses concise and helpful.
 Do not ever return code, markdown, tables, lists, or any other UI text in your responses.
