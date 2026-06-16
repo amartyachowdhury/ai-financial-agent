@@ -8,6 +8,7 @@ export interface Model {
   apiIdentifier: string;
   description: string;
   tier: ModelTier;
+  supportsVision: boolean;
 }
 
 export const models: Array<Model> = [
@@ -17,6 +18,7 @@ export const models: Array<Model> = [
     apiIdentifier: 'gpt-4.1-nano-2025-04-14',
     description: 'Fastest, most cost-effective GPT-4.1 model',
     tier: 'low',
+    supportsVision: true,
   },
   {
     id: 'gpt-4.1-mini-2025-04-14',
@@ -24,6 +26,7 @@ export const models: Array<Model> = [
     apiIdentifier: 'gpt-4.1-mini-2025-04-14',
     description: 'Balance between intelligence, speed, and cost',
     tier: 'medium',
+    supportsVision: true,
   },
   {
     id: 'gpt-4.1-2025-04-14',
@@ -31,13 +34,15 @@ export const models: Array<Model> = [
     apiIdentifier: 'gpt-4.1-2025-04-14',
     description: 'Flagship model for complex tasks',
     tier: 'high',
+    supportsVision: true,
   },
   {
     id: 'gpt-4o',
     label: 'GPT-4o',
     apiIdentifier: 'gpt-4o',
-    description: 'Omni-purpose model for complex tasks',
+    description: 'Omni-purpose model for complex tasks and images',
     tier: 'high',
+    supportsVision: true,
   },
 ] as const;
 
@@ -48,3 +53,7 @@ export const MODEL_TIER_LABELS: Record<ModelTier, string> = {
   medium: 'Balanced',
   high: 'Higher cost',
 };
+
+export function modelSupportsVision(modelId: string): boolean {
+  return models.find((model) => model.id === modelId)?.supportsVision ?? false;
+}

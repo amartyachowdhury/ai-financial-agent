@@ -7,13 +7,14 @@ import {
 
 import { auth } from '@/app/(auth)/auth';
 import { customModel } from '@/lib/ai';
-import { models } from '@/lib/ai/models';
-import { systemPrompt } from '@/lib/ai/prompts';
 import {
   appendTaskBreakdownToUserMessage,
   generateTaskBreakdown,
   isTaskBreakdownEnabled,
 } from '@/lib/ai/task-breakdown';
+import { buildCoreUserContent } from '@/lib/ai/message-content';
+import { models } from '@/lib/ai/models';
+import { systemPrompt } from '@/lib/ai/prompts';
 import { chatRequestSchema } from '@/lib/api/validation';
 import {
   deleteChatById,
@@ -95,6 +96,17 @@ export async function POST(request: Request) {
       });
     }
 
+    const lastClientMessage = [...messages].reverse().find(
+      (message) => message.role === 'user',
+    );
+    const attachments = lastClientMessage?.experimental_attachments ?? [];
+
+    if (attachments.length > 0 && !model.supportsVision) {
+      return new Response('Selected model does not support image inputs', {
+        status: 400,
+      });
+    }
+
     const coreMessages = convertToCoreMessages(messages as Array<Message>);
     const userMessage = getMostRecentUserMessage(coreMessages);
 
@@ -103,9 +115,11 @@ export async function POST(request: Request) {
     }
 
     const originalUserContent =
-      typeof userMessage.content === 'string'
-        ? userMessage.content
-        : JSON.stringify(userMessage.content);
+      typeof lastClientMessage?.content === 'string'
+        ? lastClientMessage.content
+        : typeof userMessage.content === 'string'
+          ? userMessage.content
+          : JSON.stringify(userMessage.content);
 
     const chat = await getChatById({ id });
 
@@ -123,7 +137,16 @@ export async function POST(request: Request) {
 
     await saveMessages({
       messages: [
-        { ...userMessage, id: userMessageId, createdAt: new Date(), chatId: id },
+        {
+          id: userMessageId,
+          chatId: id,
+          role: 'user',
+          content: buildCoreUserContent({
+            text: originalUserContent,
+            attachments,
+          }),
+          createdAt: new Date(),
+        },
       ],
     });
 
@@ -174,21 +197,24 @@ export async function POST(request: Request) {
 
         let receivedFirstChunk = false;
 
-        const coreMessagesWithTaskNames = [...coreMessages];
-        const lastMessage =
-          coreMessagesWithTaskNames[coreMessagesWithTaskNames.length - 1];
+        const messagesForModel = [...coreMessages];
+        const lastMessageIndex = messagesForModel.length - 1;
+        const lastMessage = messagesForModel[lastMessageIndex];
 
-        if (
-          isTaskBreakdownEnabled() &&
-          coreMessagesWithTaskNames.length > 0 &&
-          lastMessage?.role === 'user' &&
-          taskNames.length > 0
-        ) {
-          coreMessagesWithTaskNames[coreMessagesWithTaskNames.length - 1] = {
+        if (lastMessage?.role === 'user') {
+          const promptText =
+            isTaskBreakdownEnabled() && taskNames.length > 0
+              ? appendTaskBreakdownToUserMessage({
+                  originalUserContent,
+                  taskNames,
+                })
+              : originalUserContent;
+
+          messagesForModel[lastMessageIndex] = {
             role: 'user',
-            content: appendTaskBreakdownToUserMessage({
-              originalUserContent,
-              taskNames,
+            content: buildCoreUserContent({
+              text: promptText,
+              attachments,
             }),
           };
         }
@@ -197,7 +223,7 @@ export async function POST(request: Request) {
           model: customModel(model.apiIdentifier, resolvedModelApiKey),
           tools: financialToolsManager.getTools(),
           system: systemPrompt,
-          messages: coreMessagesWithTaskNames,
+          messages: messagesForModel,
           maxSteps: 10,
           onChunk: (event) => {
             const isToolCall = event.chunk.type === 'tool-call';

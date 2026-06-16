@@ -10,6 +10,8 @@ const attachmentSchema = z.object({
   contentType: z.string().optional(),
 });
 
+export type MessageAttachment = z.infer<typeof attachmentSchema>;
+
 const messageContentPartSchema = z
   .object({
     type: z.string(),

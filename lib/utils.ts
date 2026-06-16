@@ -10,6 +10,10 @@ import { twMerge } from 'tailwind-merge';
 import { track as vercelTrack } from '@vercel/analytics';
 
 import type { Message as DBMessage } from '@/lib/db/schema';
+import {
+  extractAttachmentsFromContent,
+  extractTextFromUserContent,
+} from '@/lib/ai/message-content';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -116,14 +120,17 @@ export function convertToUIMessages(
 
     let textContent = '';
     const toolInvocations: Array<ToolInvocation> = [];
+    const experimentalAttachments = extractAttachmentsFromContent(
+      message.content,
+    );
 
     if (typeof message.content === 'string') {
       textContent = message.content;
     } else if (Array.isArray(message.content)) {
+      textContent = extractTextFromUserContent(message.content);
+
       for (const content of message.content) {
-        if (content.type === 'text') {
-          textContent += content.text;
-        } else if (content.type === 'tool-call') {
+        if (content.type === 'tool-call') {
           toolInvocations.push({
             state: 'call',
             toolCallId: content.toolCallId,
@@ -139,6 +146,9 @@ export function convertToUIMessages(
       role: message.role as Message['role'],
       content: textContent,
       toolInvocations,
+      ...(experimentalAttachments.length > 0
+        ? { experimental_attachments: experimentalAttachments }
+        : {}),
     });
 
     return chatMessages;

@@ -114,15 +114,15 @@ describe('POST /api/chat', () => {
     expect(response.status).toBe(429);
   });
 
-  it('returns 400 when API keys are missing', async () => {
-    authMock.mockResolvedValue({ user: { id: 'user-1' } });
-    resolveOpenAIApiKeyMock.mockReturnValue(undefined);
+    it('returns 400 when API keys are missing', async () => {
+      authMock.mockResolvedValue({ user: { id: 'user-1' } });
+      resolveOpenAIApiKeyMock.mockReturnValue(undefined);
 
-    const response = await POST(buildRequest(validBody()));
+      const response = await POST(buildRequest(validBody()));
 
-    expect(response.status).toBe(400);
-    expect(await response.text()).toContain('Model API key');
-  });
+      expect(response.status).toBe(400);
+      expect(await response.text()).toContain('Model API key');
+    });
 
   it('returns 401 when the chat belongs to another user', async () => {
     authMock.mockResolvedValue({ user: { id: 'user-1' } });

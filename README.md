@@ -19,6 +19,7 @@ By using this software, you agree to use it solely for learning purposes.
 
 ## Table of Contents 📖
 - [Features](#features)
+- [Architecture](docs/ARCHITECTURE.md)
 - [Setup](#setup)
 - [Run the Agent](#run-the-agent)
 - [Financial Data API](#financial-data-api)
@@ -89,6 +90,8 @@ For production rate limiting, configure optional Upstash Redis env vars (`UPSTAS
 Set `ENABLE_TASK_BREAKDOWN=true` to show step-by-step research tasks before each response. This adds an extra LLM call per message and increases latency/cost.
 
 The default model is GPT 4.1 nano (lower cost). Use the model selector in the chat header to switch tiers.
+
+You can attach **JPEG or PNG images** to a message (paperclip icon). Images are uploaded to Vercel Blob and sent to the vision-capable model as context alongside your text.
 
 ## Run the Agent
 
