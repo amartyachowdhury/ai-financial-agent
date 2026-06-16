@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
-import { and, asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
@@ -9,15 +9,10 @@ import {
   user,
   chat,
   type User,
-  document,
-  type Suggestion,
-  suggestion,
   type Message,
   message,
   vote,
 } from './schema';
-
-type BlockKind = 'text' | 'code';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -154,32 +149,6 @@ export async function getMessagesByChatId({ id }: { id: string }) {
   }
 }
 
-export async function getTotalUserMessagesByUserId({ userId }: { userId: string | undefined }) {
-  if (!userId) {
-    return 0;
-  }
-
-  try {
-    const [result] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(message)
-      .innerJoin(chat, eq(message.chatId, chat.id))
-      .where(
-        and(
-          eq(chat.userId, userId),
-          eq(message.role, 'user')
-        )
-      );
-
-    return result?.count ?? 0;
-  } catch (error) {
-    console.error('Failed to get total messages by user from database');
-    throw error;
-  }
-}
-
 export async function voteMessage({
   chatId,
   messageId,
@@ -217,123 +186,6 @@ export async function getVotesByChatId({ id }: { id: string }) {
     return await db.select().from(vote).where(eq(vote.chatId, id));
   } catch (error) {
     console.error('Failed to get votes by chat id from database', error);
-    throw error;
-  }
-}
-
-export async function saveDocument({
-  id,
-  title,
-  kind,
-  content,
-  userId,
-}: {
-  id: string;
-  title: string;
-  kind: BlockKind;
-  content: string;
-  userId: string;
-}) {
-  try {
-    return await db.insert(document).values({
-      id,
-      title,
-      kind,
-      content,
-      userId,
-      createdAt: new Date(),
-    });
-  } catch (error) {
-    console.error('Failed to save document in database');
-    throw error;
-  }
-}
-
-export async function getDocumentsById({ id }: { id: string }) {
-  try {
-    const documents = await db
-      .select()
-      .from(document)
-      .where(eq(document.id, id))
-      .orderBy(asc(document.createdAt));
-
-    return documents;
-  } catch (error) {
-    console.error('Failed to get document by id from database');
-    throw error;
-  }
-}
-
-export async function getDocumentById({ id }: { id: string }) {
-  try {
-    const [selectedDocument] = await db
-      .select()
-      .from(document)
-      .where(eq(document.id, id))
-      .orderBy(desc(document.createdAt));
-
-    return selectedDocument;
-  } catch (error) {
-    console.error('Failed to get document by id from database');
-    throw error;
-  }
-}
-
-export async function deleteDocumentsByIdAfterTimestamp({
-  id,
-  timestamp,
-}: {
-  id: string;
-  timestamp: Date;
-}) {
-  try {
-    await db
-      .delete(suggestion)
-      .where(
-        and(
-          eq(suggestion.documentId, id),
-          gt(suggestion.documentCreatedAt, timestamp),
-        ),
-      );
-
-    return await db
-      .delete(document)
-      .where(and(eq(document.id, id), gt(document.createdAt, timestamp)));
-  } catch (error) {
-    console.error(
-      'Failed to delete documents by id after timestamp from database',
-    );
-    throw error;
-  }
-}
-
-export async function saveSuggestions({
-  suggestions,
-}: {
-  suggestions: Array<Suggestion>;
-}) {
-  try {
-    return await db.insert(suggestion).values(suggestions);
-  } catch (error) {
-    console.error('Failed to save suggestions in database');
-    throw error;
-  }
-}
-
-export async function getSuggestionsByDocumentId({
-  documentId,
-}: {
-  documentId: string;
-}) {
-  try {
-    return await db
-      .select()
-      .from(suggestion)
-      .where(and(eq(suggestion.documentId, documentId)));
-  } catch (error) {
-    console.error(
-      'Failed to get suggestions by document version from database',
-    );
     throw error;
   }
 }

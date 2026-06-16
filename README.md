@@ -84,6 +84,8 @@ On first visit, the app sets a `fingerprint` cookie in your browser and creates 
 
 `AUTH_SECRET` is required for NextAuth session signing. No OAuth or credential provider setup is needed for the demo.
 
+For production rate limiting, configure optional Upstash Redis env vars (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`). Without them, the app falls back to per-instance in-memory limits suitable for local development.
+
 ## Run the Agent
 
 After completing the steps above, simply run the following command to start the development server:

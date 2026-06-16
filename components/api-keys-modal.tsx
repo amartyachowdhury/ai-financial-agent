@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
 import { getOpenAIApiKey, setOpenAIApiKey, getFinancialDatasetsApiKey, setFinancialDatasetsApiKey } from '@/lib/db/api-keys';
-import { validateOpenAIKey } from '@/lib/utils/api-key-validation';
 
 
 interface ApiKeysModalProps {
@@ -34,7 +33,18 @@ export function ApiKeysModal({
       setIsLoading(true);
       setOpenAIError('');
 
-      const { isValid, error } = await validateOpenAIKey(openAIKey);
+      const response = await fetch('/api/validate-api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: openAIKey }),
+      });
+
+      if (!response.ok) {
+        setOpenAIError('Failed to validate API key. Please try again.');
+        return;
+      }
+
+      const { isValid, error } = await response.json();
       
       if (!isValid) {
         setOpenAIError(error ?? 'Invalid OpenAI API key');

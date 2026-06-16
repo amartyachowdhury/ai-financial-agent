@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    const rateLimit = checkRateLimit(session.user.id);
+    const rateLimit = await checkRateLimit(session.user.id);
     if (!rateLimit.allowed) {
       return new Response('Rate limit exceeded. Please try again later.', {
         status: 429,
