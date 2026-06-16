@@ -1,9 +1,7 @@
-import { Suggestion } from '@/lib/db/schema';
-
 export type ToolLoadingContent = {
   tool: string;
   isLoading: boolean;
-  message?: string;
+  message?: string | null;
 };
 
 export type QueryLoadingContent = {
@@ -13,19 +11,11 @@ export type QueryLoadingContent = {
 };
 
 export type DataStreamDeltaType =
-  | 'text-delta'
-  | 'code-delta'
-  | 'title'
-  | 'id'
-  | 'suggestion'
-  | 'clear'
-  | 'finish'
   | 'user-message-id'
-  | 'kind'
   | 'tool-loading'
   | 'query-loading';
 
 export type DataStreamDelta = {
   type: DataStreamDeltaType;
-  content: string | Suggestion | ToolLoadingContent | QueryLoadingContent;
-}; 
+  content: string | ToolLoadingContent | QueryLoadingContent;
+};

@@ -18,7 +18,6 @@ interface MessagesProps {
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
-  isBlockVisible: boolean;
 }
 
 function PureMessages({
@@ -33,16 +32,13 @@ function PureMessages({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const queryLoadingState = useQueryLoadingSelector(state => state);
+  const queryLoadingState = useQueryLoadingSelector((state) => state);
 
-  const loadingMessages = queryLoadingState.taskNames.length > 0
-    ? queryLoadingState.taskNames
-    : [];
+  const loadingMessages =
+    queryLoadingState.taskNames.length > 0 ? queryLoadingState.taskNames : [];
 
   return (
-    <div
-      className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll mt-6"
-    >
+    <div className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll mt-6">
       {messages.map((message, index) => (
         <PreviewMessage
           key={message.id}
@@ -62,9 +58,7 @@ function PureMessages({
 
       {(isLoading || queryLoadingState.isLoading) &&
         messages.length > 0 &&
-        messages[messages.length - 1].role === 'user' && (
-          <ThinkingMessage />
-        )}
+        messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
       {queryLoadingState.isLoading && (
         <LoadingMessage loadingMessages={loadingMessages} />
@@ -79,8 +73,6 @@ function PureMessages({
 }
 
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
-  if (prevProps.isBlockVisible && nextProps.isBlockVisible) return true;
-
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.isLoading && nextProps.isLoading) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;

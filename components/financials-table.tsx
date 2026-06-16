@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/accordion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { Download } from 'lucide-react';
 import { Blue, ElectricViolet, Green } from './styles/colors';
+import { exportToCsv } from '@/lib/utils/export-csv';
+import { Button } from './ui/button';
 import { IncomeStatementsTable } from './income-statements-table';
 import { BalanceSheetsTable } from './balance-sheets-table';
 import { CashFlowStatementsTable } from './cash-flow-statements-table';
@@ -202,6 +205,18 @@ export function FinancialsTable({
           </span>
         </AccordionTrigger>
           <AccordionContent>
+            <div className="mb-3 flex justify-end px-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  exportToCsv(data, `${ticker ?? 'financials'}-data.csv`)
+                }
+              >
+                <Download className="mr-2 size-4" />
+                Export CSV
+              </Button>
+            </div>
             <Table>
               <TableHeader className="bg-muted">
                 <TableRow className="bg-muted">

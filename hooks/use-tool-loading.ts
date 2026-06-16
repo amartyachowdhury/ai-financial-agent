@@ -3,7 +3,15 @@
 import { useMemo } from 'react';
 import useSWR from 'swr';
 
-type ToolName = 'searchStocksByFilters' | 'getCurrentStockPrice' | 'getStockPrices' | 'getIncomeStatements' | 'getBalanceSheets' | 'getCashFlowStatements' | 'getFinancialMetrics';
+type ToolName =
+  | 'searchStocksByFilters'
+  | 'getStockPrices'
+  | 'getIncomeStatements'
+  | 'getBalanceSheets'
+  | 'getCashFlowStatements'
+  | 'getFinancialMetrics'
+  | 'compareStocks'
+  | 'getNews';
 
 interface ToolLoadingState {
   [key: string]: {
@@ -14,12 +22,13 @@ interface ToolLoadingState {
 
 const initialState: ToolLoadingState = {
   searchStocksByFilters: { loading: false },
-  getCurrentStockPrice: { loading: false },
   getStockPrices: { loading: false },
   getIncomeStatements: { loading: false },
   getBalanceSheets: { loading: false },
   getCashFlowStatements: { loading: false },
   getFinancialMetrics: { loading: false },
+  compareStocks: { loading: false },
+  getNews: { loading: false },
 };
 
 // Add type for selector function
@@ -52,10 +61,14 @@ export function useToolLoading() {
     return loadingState;
   }, [loadingState]);
 
-  const setToolLoading = (tool: ToolName, isLoading: boolean, message?: string) => {
+  const setToolLoading = (
+    tool: ToolName | string,
+    isLoading: boolean,
+    message?: string | null,
+  ) => {
     setLoadingState((currentState) => ({
-      ...currentState,
-      [tool]: { loading: isLoading, message },
+      ...(currentState ?? initialState),
+      [tool]: { loading: isLoading, message: message ?? undefined },
     }));
   };
 

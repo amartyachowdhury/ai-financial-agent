@@ -6,15 +6,18 @@ import { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
 import { ChatHeader } from '@/components/chat-header';
+import { EducationalDisclaimer } from '@/components/educational-disclaimer';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher, track } from '@/lib/utils';
-import { getFinancialDatasetsApiKey, getLocalOpenAIApiKey } from '@/lib/db/api-keys';
+import { shouldSendClientApiKeys } from '@/lib/server/api-keys-client';
+import {
+  getFinancialDatasetsApiKey,
+  getLocalOpenAIApiKey,
+} from '@/lib/db/api-keys';
 
-import { Block } from './block';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
-import { useBlockSelector } from '@/hooks/use-block';
 
 export function Chat({
   id,
@@ -30,8 +33,11 @@ export function Chat({
   isReadonly: boolean;
 }) {
   const { mutate } = useSWRConfig();
-  const financialDatasetsApiKey = getFinancialDatasetsApiKey();
-  const openAIApiKey = getLocalOpenAIApiKey();
+  const allowClientKeys = shouldSendClientApiKeys();
+  const financialDatasetsApiKey = allowClientKeys
+    ? getFinancialDatasetsApiKey()
+    : undefined;
+  const openAIApiKey = allowClientKeys ? getLocalOpenAIApiKey() : undefined;
 
   const {
     messages,
@@ -45,11 +51,12 @@ export function Chat({
     reload,
   } = useChat({
     id,
-    body: { 
-      id, 
+    body: {
+      id,
       modelId: selectedModelId,
-      modelApiKey: openAIApiKey,
-      financialDatasetsApiKey,
+      ...(allowClientKeys
+        ? { modelApiKey: openAIApiKey, financialDatasetsApiKey }
+        : {}),
     },
     initialMessages,
     experimental_throttle: 100,
@@ -78,65 +85,45 @@ export function Chat({
   );
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-  const isBlockVisible = useBlockSelector((state) => state.isVisible);
 
   return (
-    <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
-        <ChatHeader
-          chatId={id}
-          selectedModelId={selectedModelId}
-          selectedVisibilityType={selectedVisibilityType}
-          isReadonly={isReadonly}
-        />
-
-        <Messages
-          chatId={id}
-          isLoading={isLoading}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          reload={reload}
-          isReadonly={isReadonly}
-          isBlockVisible={isBlockVisible}
-        />
-
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-          {!isReadonly && (
-            <MultimodalInput
-              chatId={id}
-              input={input}
-              setInput={setInput}
-              handleSubmit={handleFormSubmit}
-              isLoading={isLoading}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              setMessages={setMessages}
-              append={append}
-            />
-          )}
-        </form>
-      </div>
-
-      <Block
+    <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <ChatHeader
         chatId={id}
-        input={input}
-        setInput={setInput}
-        handleSubmit={handleFormSubmit}
-        isLoading={isLoading}
-        stop={stop}
-        attachments={attachments}
-        setAttachments={setAttachments}
-        append={append}
-        messages={messages}
-        setMessages={setMessages}
-        reload={reload}
-        votes={votes}
+        selectedModelId={selectedModelId}
+        selectedVisibilityType={selectedVisibilityType}
         isReadonly={isReadonly}
       />
 
-    </>
+      <Messages
+        chatId={id}
+        isLoading={isLoading}
+        votes={votes}
+        messages={messages}
+        setMessages={setMessages}
+        reload={reload}
+        isReadonly={isReadonly}
+      />
+
+      <EducationalDisclaimer />
+
+      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+        {!isReadonly && (
+          <MultimodalInput
+            chatId={id}
+            input={input}
+            setInput={setInput}
+            handleSubmit={handleFormSubmit}
+            isLoading={isLoading}
+            stop={stop}
+            attachments={attachments}
+            setAttachments={setAttachments}
+            messages={messages}
+            setMessages={setMessages}
+            append={append}
+          />
+        )}
+      </form>
+    </div>
   );
 }

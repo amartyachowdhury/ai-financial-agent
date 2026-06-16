@@ -50,12 +50,12 @@ export function getLocalStorage(key: string) {
   return null;
 }
 
-export function setLocalStorage(key: string, value: any) {
+export function setLocalStorage(key: string, value: unknown) {
   if (typeof window !== 'undefined') {
     try {
-      const valueToStore = typeof value === 'string' ? value : JSON.stringify(value);
+      const valueToStore =
+        typeof value === 'string' ? value : JSON.stringify(value);
       localStorage.setItem(key, valueToStore);
-      console.log(`Successfully stored ${key}:`, value);
     } catch (error) {
       console.error(`Error storing ${key}:`, error);
     }

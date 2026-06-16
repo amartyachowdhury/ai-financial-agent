@@ -1,12 +1,14 @@
 import Link from 'next/link';
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CodeBlock } from './code-block';
 
 const components: Partial<Components> = {
-  // @ts-expect-error
-  code: CodeBlock,
+  code: ({ children, className, ...props }) => (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  ),
   pre: ({ children }) => <>{children}</>,
   ol: ({ node, children, ...props }) => {
     return (

@@ -3,8 +3,10 @@
 import { type CoreUserMessage, generateText } from 'ai';
 import { cookies } from 'next/headers';
 
+import { auth } from '@/app/(auth)/auth';
 import { customModel } from '@/lib/ai';
 import {
+  assertChatOwnership,
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
   updateChatVisiblityById,
@@ -37,7 +39,19 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
   const [message] = await getMessageById({ id });
+
+  if (!message) {
+    throw new Error('Message not found');
+  }
+
+  await assertChatOwnership({ chatId: message.chatId, userId: session.user.id });
 
   await deleteMessagesByChatIdAfterTimestamp({
     chatId: message.chatId,
@@ -52,5 +66,12 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  await assertChatOwnership({ chatId, userId: session.user.id });
   await updateChatVisiblityById({ chatId, visibility });
 }

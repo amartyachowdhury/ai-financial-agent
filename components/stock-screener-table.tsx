@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cx } from 'class-variance-authority';
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Download } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -21,6 +21,8 @@ import {
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Blue, Green } from './styles/colors';
+import { exportToCsv } from '@/lib/utils/export-csv';
+import { Button } from './ui/button';
 
 interface StockScreenerResult {
   ticker: string;
@@ -132,6 +134,16 @@ export function StockScreenerTable({
             </span>
           </AccordionTrigger>
           <AccordionContent>
+            <div className="mb-3 flex justify-end px-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToCsv(sortedData, 'stock-screener-results.csv')}
+              >
+                <Download className="mr-2 size-4" />
+                Export CSV
+              </Button>
+            </div>
             <div className="max-h-[600px] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-muted">

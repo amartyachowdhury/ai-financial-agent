@@ -1,5 +1,13 @@
+import { z } from 'zod';
+
 import { auth } from '@/app/(auth)/auth';
-import { getVotesByChatId, voteMessage } from '@/lib/db/queries';
+import { votePatchSchema } from '@/lib/api/validation';
+import {
+  assertChatOwnership,
+  ChatOwnershipError,
+  getVotesByChatId,
+  voteMessage,
+} from '@/lib/db/queries';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,8 +19,17 @@ export async function GET(request: Request) {
 
   const session = await auth();
 
-  if (!session || !session.user || !session.user.email) {
+  if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    await assertChatOwnership({ chatId, userId: session.user.id });
+  } catch (error) {
+    if (error instanceof ChatOwnershipError) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+    throw error;
   }
 
   const votes = await getVotesByChatId({ id: chatId });
@@ -21,27 +38,34 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const {
-    chatId,
-    messageId,
-    type,
-  }: { chatId: string; messageId: string; type: 'up' | 'down' } =
-    await request.json();
+  const json = await request.json();
+  const parsed = votePatchSchema.safeParse(json);
 
-  if (!chatId || !messageId || !type) {
-    return new Response('messageId and type are required', { status: 400 });
+  if (!parsed.success) {
+    return new Response('Invalid request', { status: 400 });
   }
+
+  const { chatId, messageId, type } = parsed.data;
 
   const session = await auth();
 
-  if (!session || !session.user || !session.user.email) {
+  if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    await assertChatOwnership({ chatId, userId: session.user.id });
+  } catch (error) {
+    if (error instanceof ChatOwnershipError) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+    throw error;
   }
 
   await voteMessage({
     chatId,
     messageId,
-    type: type,
+    type,
   });
 
   return new Response('Message voted', { status: 200 });

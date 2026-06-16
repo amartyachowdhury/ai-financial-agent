@@ -16,7 +16,8 @@ import {
   message,
   vote,
 } from './schema';
-import { BlockKind } from '@/components/block';
+
+type BlockKind = 'text' | 'code';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -102,6 +103,33 @@ export async function getChatById({ id }: { id: string }) {
     console.error('Failed to get chat by id from database');
     throw error;
   }
+}
+
+export class ChatOwnershipError extends Error {
+  constructor(message = 'Unauthorized') {
+    super(message);
+    this.name = 'ChatOwnershipError';
+  }
+}
+
+export async function assertChatOwnership({
+  chatId,
+  userId,
+}: {
+  chatId: string;
+  userId: string;
+}) {
+  const selectedChat = await getChatById({ id: chatId });
+
+  if (!selectedChat) {
+    throw new ChatOwnershipError('Chat not found');
+  }
+
+  if (selectedChat.userId !== userId) {
+    throw new ChatOwnershipError();
+  }
+
+  return selectedChat;
 }
 
 export async function saveMessages({ messages }: { messages: Array<Message> }) {

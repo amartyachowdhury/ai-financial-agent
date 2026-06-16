@@ -19,8 +19,17 @@ import { MessageEditor } from './message-editor';
 import { FinancialsTable } from './financials-table';
 import { StockChart } from './ui/stock-chart';
 import { StockScreenerTable } from './stock-screener-table';
-import { Box } from 'lucide-react';
+import { ComparisonTable } from './comparison-table';
 import { News } from './ui/news';
+import {
+  isToolError,
+  ToolWidgetError,
+} from './tool-widget-error';
+import {
+  ChartWidgetSkeleton,
+  NewsWidgetSkeleton,
+  TableWidgetSkeleton,
+} from './widget-skeleton';
 
 const PurePreviewMessage = ({
   chatId,
@@ -125,6 +134,16 @@ const PurePreviewMessage = ({
                   if (state === 'result') {
                     const { result } = toolInvocation;
 
+                    if (isToolError(result)) {
+                      return (
+                        <ToolWidgetError
+                          key={toolCallId}
+                          title={`Failed to load ${toolName}`}
+                          message={result.message}
+                        />
+                      );
+                    }
+
                     return (
                       <div key={toolCallId}>
                         {toolName === 'getStockPrices' ? (
@@ -152,17 +171,26 @@ const PurePreviewMessage = ({
                             title="Financial Metrics"
                           />
                         ) : toolName === 'searchStocksByFilters' ? (
-                          <StockScreenerTable
-                            data={result.search_results}
-                          />
+                          <StockScreenerTable data={result.search_results} />
+                        ) : toolName === 'compareStocks' ? (
+                          <ComparisonTable data={result} />
                         ) : (
                           <div />
                         )}
                       </div>
                     );
                   }
+
                   return (
-                    <div key={toolCallId} />
+                    <div key={toolCallId}>
+                      {toolName === 'getStockPrices' ? (
+                        <ChartWidgetSkeleton />
+                      ) : toolName === 'getNews' ? (
+                        <NewsWidgetSkeleton />
+                      ) : (
+                        <TableWidgetSkeleton />
+                      )}
+                    </div>
                   );
                 })}
               </div>
