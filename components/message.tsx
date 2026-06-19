@@ -21,6 +21,8 @@ import { StockChart } from './ui/stock-chart';
 import { StockScreenerTable } from './stock-screener-table';
 import { ComparisonTable } from './comparison-table';
 import { News } from './ui/news';
+import { SecFilings } from './ui/sec-filings';
+import { CompanySearch } from './ui/company-search';
 import {
   isToolError,
   ToolWidgetError,
@@ -174,8 +176,15 @@ const PurePreviewMessage = ({
                           <StockScreenerTable data={result.search_results} />
                         ) : toolName === 'compareStocks' ? (
                           <ComparisonTable data={result} />
+                        ) : toolName === 'getSecFilings' ? (
+                          <SecFilings data={result} ticker={args?.ticker as string | undefined} />
+                        ) : toolName === 'searchCompanies' ? (
+                          <CompanySearch data={result} />
                         ) : (
-                          <div />
+                          <ToolWidgetError
+                            title={`Unsupported tool: ${toolName}`}
+                            message="This tool result cannot be displayed."
+                          />
                         )}
                       </div>
                     );
@@ -268,8 +277,8 @@ export const LoadingMessage = ({ loadingMessages }: { loadingMessages: string[] 
       >
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col gap-4 text-muted-foreground">
-            {loadingMessages.map((message, index) => (
-              <div key={index} className="flex items-center gap-2">
+            {loadingMessages.map((message) => (
+              <div key={message} className="flex items-center gap-2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent text-[#9FA2A5] align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
                 <span className="text-sm text-[#9FA2A5]">{message}</span>
               </div>

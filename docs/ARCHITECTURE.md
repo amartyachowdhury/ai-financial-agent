@@ -63,7 +63,7 @@ flowchart TB
 
 ## Authentication
 
-The demo uses **anonymous fingerprint auth**, not email/password.
+The demo uses **anonymous fingerprint auth** by default, not email/password. Optional **GitHub OAuth** is available when `GITHUB_ID` and `GITHUB_SECRET` are configured; signing in migrates anonymous chat history to the OAuth account.
 
 1. A `fingerprint` cookie is set on first visit.
 2. `AuthCheck` in the root layout calls `ensureSession()` when unauthenticated.
@@ -88,10 +88,11 @@ Users can attach JPEG or PNG images via the paperclip control. Images are upload
 
 ## Financial tools
 
-`FinancialToolsManager` exposes eight tools backed by the [Financial Datasets API](https://financialdatasets.ai):
+`FinancialToolsManager` exposes ten tools backed by the [Financial Datasets API](https://financialdatasets.ai):
 
 - Stock prices, fundamentals (income, balance sheet, cash flow, metrics)
 - Stock screener, comparison, news
+- SEC filings and company search
 
 Each tool:
 
@@ -134,6 +135,7 @@ Drizzle migrations live in `lib/db/migrations/`. Run `pnpm db:migrate` after sch
 | `UPSTASH_REDIS_REST_URL` / `TOKEN` | Distributed rate limits (optional) |
 | `ENABLE_TASK_BREAKDOWN` | Extra LLM call for research steps (optional) |
 | `NEXT_PUBLIC_ALLOW_CLIENT_API_KEYS` | BYOK in browser (demo/dev only) |
+| `GITHUB_ID` / `GITHUB_SECRET` | Optional GitHub OAuth sign-in |
 
 ## Testing
 

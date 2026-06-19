@@ -16,6 +16,8 @@ export const financialTools = [
   'searchStocksByFilters',
   'getNews',
   'compareStocks',
+  'getSecFilings',
+  'searchCompanies',
 ] as const;
 
 export type AllowedTools = (typeof financialTools)[number];
@@ -57,10 +59,22 @@ export class FinancialToolsManager {
     this.config = config;
   }
 
+  private emitToolLoading(
+    toolName: string,
+    isLoading: boolean,
+    message: string | null,
+  ) {
+    this.config.dataStream.writeData({
+      type: 'tool-loading',
+      content: { tool: toolName, isLoading, message },
+    });
+  }
+
   private getCachedOrExecute<T>(
     toolName: string,
     params: Record<string, unknown>,
     execute: () => Promise<T>,
+    loadingMessage?: string,
   ): Promise<T | { error: true; tool: string; message: string }> {
     const key = JSON.stringify({ toolName, params });
 
@@ -68,12 +82,21 @@ export class FinancialToolsManager {
       return Promise.resolve(this.toolResultCache.get(key) as T);
     }
 
+    if (loadingMessage) {
+      this.emitToolLoading(toolName, true, loadingMessage);
+    }
+
     return execute()
       .then((result) => {
         this.toolResultCache.set(key, result);
         return result;
       })
-      .catch((error) => toolError(toolName, error));
+      .catch((error) => toolError(toolName, error))
+      .finally(() => {
+        if (loadingMessage) {
+          this.emitToolLoading(toolName, false, null);
+        }
+      });
   }
 
   public getTools() {
@@ -109,6 +132,7 @@ export class FinancialToolsManager {
                 `/news/?ticker=${ticker}&limit=${limit ?? 5}`,
                 apiKey,
               ),
+            `Fetching news for ${ticker}...`,
           );
         },
       },
@@ -196,6 +220,7 @@ export class FinancialToolsManager {
                 historical: historicalPricesData,
               };
             },
+            `Fetching prices for ${ticker}...`,
           );
         },
       },
@@ -257,6 +282,7 @@ export class FinancialToolsManager {
                 apiKey,
               );
             },
+            `Fetching income statements for ${ticker}...`,
           );
         },
       },
@@ -318,6 +344,7 @@ export class FinancialToolsManager {
                 apiKey,
               );
             },
+            `Fetching balance sheets for ${ticker}...`,
           );
         },
       },
@@ -381,6 +408,7 @@ export class FinancialToolsManager {
                 apiKey,
               );
             },
+            `Fetching cash flow statements for ${ticker}...`,
           );
         },
       },
@@ -491,22 +519,13 @@ export class FinancialToolsManager {
             'searchStocksByFilters',
             { filters, period, limit },
             async () => {
-              this.config.dataStream.writeData({
-                type: 'tool-loading',
-                content: {
-                  tool: 'searchStocksByFilters',
-                  isLoading: true,
-                  message: 'Searching for stocks matching your criteria...',
-                },
-              });
-
               const body = {
                 filters,
                 period: period ?? 'ttm',
                 limit: limit ?? 5,
               };
 
-              const data = await fetchFinancialDataNoCache(
+              return fetchFinancialDataNoCache(
                 '/financials/search/',
                 apiKey,
                 {
@@ -515,18 +534,8 @@ export class FinancialToolsManager {
                   body: JSON.stringify(body),
                 },
               );
-
-              this.config.dataStream.writeData({
-                type: 'tool-loading',
-                content: {
-                  tool: 'searchStocksByFilters',
-                  isLoading: false,
-                  message: null,
-                },
-              });
-
-              return data;
             },
+            'Searching for stocks matching your criteria...',
           );
         },
       },
@@ -580,6 +589,146 @@ export class FinancialToolsManager {
                 comparisons: results,
               };
             },
+            `Comparing ${tickers.join(', ')}...`,
+          );
+        },
+      },
+      getSecFilings: {
+        description:
+          'Get SEC filings (10-K, 10-Q, 8-K) for a company. Use when the user asks about annual reports, quarterly filings, or regulatory disclosures.',
+        parameters: z.object({
+          ticker: z
+            .string()
+            .describe('The ticker of the company to get SEC filings for'),
+          filing_type: z
+            .enum(['10-K', '10-Q', '8-K', '20-F', '6-K'])
+            .optional()
+            .describe('Filter by filing type'),
+          limit: z
+            .number()
+            .optional()
+            .default(5)
+            .describe('The number of filings to return'),
+          filed_at_gte: z
+            .string()
+            .optional()
+            .describe('Return filings on or after this date (YYYY-MM-DD)'),
+          filed_at_lte: z
+            .string()
+            .optional()
+            .describe('Return filings on or before this date (YYYY-MM-DD)'),
+        }),
+        execute: async (params: {
+          ticker: string;
+          filing_type?: '10-K' | '10-Q' | '8-K' | '20-F' | '6-K';
+          limit?: number;
+          filed_at_gte?: string;
+          filed_at_lte?: string;
+        }) => {
+          const { ticker, filing_type, limit, filed_at_gte, filed_at_lte } =
+            params;
+          return this.getCachedOrExecute(
+            'getSecFilings',
+            params,
+            async () => {
+              const searchParams = new URLSearchParams({ ticker });
+              if (filing_type) searchParams.append('filing_type', filing_type);
+              if (limit) searchParams.append('limit', limit.toString());
+              if (filed_at_gte)
+                searchParams.append('filed_at_gte', filed_at_gte);
+              if (filed_at_lte)
+                searchParams.append('filed_at_lte', filed_at_lte);
+
+              return fetchFinancialData(
+                `filings-${searchParams}`,
+                `/filings/?${searchParams}`,
+                apiKey,
+              );
+            },
+            `Fetching SEC filings for ${ticker}...`,
+          );
+        },
+      },
+      searchCompanies: {
+        description:
+          'Search for companies by ticker symbol or company name. Use when the user asks to find a company, look up a ticker, or is unsure of the exact ticker symbol.',
+        parameters: z.object({
+          query: z
+            .string()
+            .describe('Ticker prefix or company name to search for'),
+          limit: z
+            .number()
+            .optional()
+            .default(5)
+            .describe('Maximum number of results to return'),
+        }),
+        execute: async ({
+          query,
+          limit,
+        }: {
+          query: string;
+          limit?: number;
+        }) => {
+          return this.getCachedOrExecute(
+            'searchCompanies',
+            { query, limit: limit ?? 5 },
+            async () => {
+              const tickersData = (await fetchFinancialData(
+                'financial-tickers',
+                '/financials/tickers/',
+                apiKey,
+              )) as { tickers?: Array<string | { ticker: string; name?: string }> };
+
+              const allTickers = (tickersData.tickers ?? []).map((entry) =>
+                typeof entry === 'string' ? { ticker: entry } : entry,
+              );
+
+              const normalizedQuery = query.trim().toLowerCase();
+              const matches = allTickers.filter((entry) => {
+                const tickerMatch = entry.ticker
+                  .toLowerCase()
+                  .startsWith(normalizedQuery);
+                const nameMatch = entry.name
+                  ?.toLowerCase()
+                  .includes(normalizedQuery);
+                return tickerMatch || nameMatch;
+              });
+
+              const topMatches = matches.slice(0, limit ?? 5);
+
+              const results = await Promise.all(
+                topMatches.map(async (entry) => {
+                  try {
+                    const factsData = (await fetchFinancialData(
+                      `company-facts-${entry.ticker}`,
+                      `/company/facts?ticker=${entry.ticker}`,
+                      apiKey,
+                    )) as {
+                      company_facts?: Record<string, unknown>;
+                    };
+
+                    const facts = factsData.company_facts ?? {};
+                    return {
+                      ticker: entry.ticker,
+                      name: (facts.name as string) ?? entry.name,
+                      market_cap: facts.market_cap as number | undefined,
+                      sic_description: facts.sic_description as
+                        | string
+                        | undefined,
+                      is_active: facts.is_active as boolean | undefined,
+                    };
+                  } catch {
+                    return {
+                      ticker: entry.ticker,
+                      name: entry.name,
+                    };
+                  }
+                }),
+              );
+
+              return { query, results };
+            },
+            `Searching for companies matching "${query}"...`,
           );
         },
       },

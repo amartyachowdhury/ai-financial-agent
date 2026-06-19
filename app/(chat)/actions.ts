@@ -9,7 +9,7 @@ import {
   assertChatOwnership,
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
-  updateChatVisiblityById,
+  updateChatVisibilityById,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 
@@ -73,5 +73,5 @@ export async function updateChatVisibility({
   }
 
   await assertChatOwnership({ chatId, userId: session.user.id });
-  await updateChatVisiblityById({ chatId, visibility });
+  await updateChatVisibilityById({ chatId, visibility });
 }

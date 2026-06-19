@@ -26,28 +26,62 @@ export function ApiKeysModal({
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [showFinancialKey, setShowFinancialKey] = useState(false);
   const [openAIError, setOpenAIError] = useState<string>('');
+  const [financialError, setFinancialError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     try {
       setIsLoading(true);
       setOpenAIError('');
+      setFinancialError('');
 
-      const response = await fetch('/api/validate-api-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: openAIKey }),
-      });
-
-      if (!response.ok) {
-        setOpenAIError('Failed to validate API key. Please try again.');
+      if (!openAIKey.trim()) {
+        setOpenAIError('OpenAI API key is required');
         return;
       }
 
-      const { isValid, error } = await response.json();
-      
-      if (!isValid) {
-        setOpenAIError(error ?? 'Invalid OpenAI API key');
+      if (!financialKey.trim()) {
+        setFinancialError('Financial Datasets API key is required');
+        return;
+      }
+
+      const [openAIResponse, financialResponse] = await Promise.all([
+        fetch('/api/validate-api-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: openAIKey, type: 'openai' }),
+        }),
+        fetch('/api/validate-api-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: financialKey, type: 'financial' }),
+        }),
+      ]);
+
+      if (!openAIResponse.ok) {
+        setOpenAIError('Failed to validate OpenAI API key. Please try again.');
+        return;
+      }
+
+      if (!financialResponse.ok) {
+        setFinancialError(
+          'Failed to validate Financial Datasets API key. Please try again.',
+        );
+        return;
+      }
+
+      const openAIResult = await openAIResponse.json();
+      const financialResult = await financialResponse.json();
+
+      if (!openAIResult.isValid) {
+        setOpenAIError(openAIResult.error ?? 'Invalid OpenAI API key');
+        return;
+      }
+
+      if (!financialResult.isValid) {
+        setFinancialError(
+          financialResult.error ?? 'Invalid Financial Datasets API key',
+        );
         return;
       }
 
@@ -134,6 +168,11 @@ export function ApiKeysModal({
                 {showFinancialKey ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {financialError && (
+              <p className="text-sm text-red-500 mt-1">
+                {financialError}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Get your API key from{' '}
               <a 

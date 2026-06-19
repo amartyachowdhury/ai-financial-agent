@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/accordion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { Download } from 'lucide-react';
 import { Green } from './styles/colors';
+import { exportToCsv } from '@/lib/utils/export-csv';
+import { Button } from './ui/button';
 
 // Common base data interface
 export interface BaseFinancialData {
@@ -119,6 +122,19 @@ export function FinancialTableBase<T extends BaseFinancialData, L extends BaseLi
 
   const headerTitle = `${ticker} ${title} (${formatPeriod(data[0].period)})`;
 
+  const handleExport = () => {
+    const rows = visibleItems
+      .filter((item) => !item.key.endsWith('_header'))
+      .map((item) => {
+        const row: Record<string, unknown> = { line_item: item.label };
+        for (const period of data) {
+          row[period.report_period] = period[item.key] ?? '';
+        }
+        return row;
+      });
+    exportToCsv(rows, `${ticker}-${title.toLowerCase().replace(/\s+/g, '-')}.csv`);
+  };
+
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value={accordionValue} className="border-none">
@@ -134,6 +150,12 @@ export function FinancialTableBase<T extends BaseFinancialData, L extends BaseLi
             </span>
           </AccordionTrigger>
           <AccordionContent>
+            <div className="mb-3 flex justify-end px-2 pt-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="mr-2 size-4" />
+                Export CSV
+              </Button>
+            </div>
             <Table>
               <TableHeader className="bg-muted">
                 <TableRow className="bg-muted">

@@ -1,4 +1,7 @@
-import { format, parseISO } from "date-fns";
+'use client';
+
+import { format, parseISO, subMonths, subYears } from "date-fns";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -19,6 +22,27 @@ import {
 } from "@/components/ui/accordion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faCaretUp, faCaretDown } from '@fortawesome/free-solid-svg-icons';
+import { Button } from './button';
+
+type DateRange = '1M' | '3M' | '1Y' | '5Y' | 'ALL';
+
+const DATE_RANGES: DateRange[] = ['1M', '3M', '1Y', '5Y', 'ALL'];
+
+function filterPricesByRange(prices: Price[], range: DateRange): Price[] {
+  if (range === 'ALL' || prices.length === 0) return prices;
+
+  const latest = new Date(prices[prices.length - 1].time);
+  const cutoff =
+    range === '1M'
+      ? subMonths(latest, 1)
+      : range === '3M'
+        ? subMonths(latest, 3)
+        : range === '1Y'
+          ? subYears(latest, 1)
+          : subYears(latest, 5);
+
+  return prices.filter((price) => new Date(price.time) >= cutoff);
+}
 
 export interface Price {
   open: number;
@@ -60,6 +84,14 @@ export interface StockChartProps {
 }
 
 export function StockChart(props: StockChartProps) {
+  const [dateRange, setDateRange] = useState<DateRange>('ALL');
+  const allPrices = props.result.historical?.prices ?? [];
+  const filteredPrices = useMemo(
+    () => filterPricesByRange(allPrices, dateRange),
+    [allPrices, dateRange],
+  );
+  const chartPrices = filteredPrices.length ? filteredPrices : allPrices;
+
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value="stock-chart" className="border-none">
@@ -78,14 +110,26 @@ export function StockChart(props: StockChartProps) {
             <div className="flex flex-col gap-4 rounded-md p-4 bg-background max-w-[750px]">
               <ChartHeader
                 ticker={props.ticker}
-                prices={props.result.historical?.prices || []}
+                prices={chartPrices}
                 snapshot={props.result.snapshot?.snapshot || null}
               />
+              <div className="flex gap-2 px-4">
+                {DATE_RANGES.map((range) => (
+                  <Button
+                    key={range}
+                    variant={dateRange === range ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateRange(range)}
+                  >
+                    {range}
+                  </Button>
+                ))}
+              </div>
               <Chart
-                data={props.result.historical?.prices?.map((price) => ({
+                data={chartPrices.map((price) => ({
                   date: formatDate(price.time),
                   value: price.close,
-                })) || []}
+                }))}
               />
             </div>
           </AccordionContent>

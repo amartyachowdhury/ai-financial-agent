@@ -106,10 +106,10 @@ export function News({ data }: NewsProps) {
                 className="flex overflow-x-auto scrollbar-hide px-6 py-4 gap-4 snap-x"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {news.map((item, index) => (
+                {news.map((item) => (
                   <Link 
                     href={item.url} 
-                    key={index} 
+                    key={item.url}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="snap-start"

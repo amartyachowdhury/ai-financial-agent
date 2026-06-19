@@ -32,7 +32,13 @@ import { SuggestedActions } from './suggested-actions';
 import { TickerSuggestions } from './ticker-suggestions';
 import { useQueryLoading } from '@/hooks/use-query-loading';
 
-const TICKER_SUGGESTIONS = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA'];
+const FALLBACK_TICKERS = [
+  { ticker: 'AAPL', name: 'Apple Inc.' },
+  { ticker: 'GOOGL', name: 'Alphabet Inc.' },
+  { ticker: 'MSFT', name: 'Microsoft Corp.' },
+  { ticker: 'NVDA', name: 'NVIDIA Corp.' },
+  { ticker: 'TSLA', name: 'Tesla Inc.' },
+];
 
 function PureMultimodalInput({
   chatId,
@@ -238,10 +244,45 @@ function PureMultimodalInput({
 
   const [showTickerSuggestions, setShowTickerSuggestions] = useState(false);
   const [tickerFilter, setTickerFilter] = useState('');
+  const [liveSuggestions, setLiveSuggestions] = useState<
+    Array<{ ticker: string; name?: string }>
+  >([]);
   const [menuPosition, setMenuPosition] = useState<{
     top: number;
     left: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!showTickerSuggestions || !tickerFilter) {
+      setLiveSuggestions(
+        FALLBACK_TICKERS.filter((entry) =>
+          entry.ticker.toLowerCase().startsWith(tickerFilter.toLowerCase()),
+        ),
+      );
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/ticker-search?q=${encodeURIComponent(tickerFilter)}`,
+          { signal: controller.signal },
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setLiveSuggestions(data.tickers ?? []);
+        }
+      } catch {
+        // Keep fallback suggestions on network errors
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [tickerFilter, showTickerSuggestions]);
 
   const handleTickerSelect = (ticker: string) => {
     const parts = input.split('@');
@@ -254,9 +295,11 @@ function PureMultimodalInput({
     }
   };
 
-  const filteredSuggestions = TICKER_SUGGESTIONS.filter((ticker) =>
-    ticker.toLowerCase().startsWith(tickerFilter.toLowerCase()),
-  );
+  const filteredSuggestions = liveSuggestions.length
+    ? liveSuggestions
+    : FALLBACK_TICKERS.filter((entry) =>
+        entry.ticker.toLowerCase().startsWith(tickerFilter.toLowerCase()),
+      );
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showTickerSuggestions && filteredSuggestions.length > 0) {
@@ -276,7 +319,7 @@ function PureMultimodalInput({
         case 'Enter':
           if (!event.shiftKey) {
             event.preventDefault();
-            handleTickerSelect(filteredSuggestions[selectedIndex]);
+            handleTickerSelect(filteredSuggestions[selectedIndex].ticker);
           }
           break;
         case 'Escape':

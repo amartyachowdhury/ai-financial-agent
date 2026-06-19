@@ -29,3 +29,38 @@ export async function validateOpenAIKey(
     };
   }
 }
+
+export async function validateFinancialDatasetsKey(
+  apiKey: string,
+): Promise<ValidationResult> {
+  try {
+    const response = await fetch(
+      'https://api.financialdatasets.ai/prices/snapshot?ticker=AAPL',
+      {
+        headers: { 'X-API-Key': apiKey },
+      },
+    );
+
+    if (response.ok) {
+      return { isValid: true };
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      return {
+        isValid: false,
+        error: 'Invalid Financial Datasets API key',
+      };
+    }
+
+    return {
+      isValid: false,
+      error: `Financial Datasets API returned status ${response.status}`,
+    };
+  } catch {
+    return {
+      isValid: false,
+      error:
+        'Invalid Financial Datasets API key. Please check your key and try again.',
+    };
+  }
+}

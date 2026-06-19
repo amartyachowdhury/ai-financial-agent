@@ -1,8 +1,13 @@
 import { Button } from './ui/button';
 import { cx } from 'class-variance-authority';
 
+interface TickerSuggestion {
+  ticker: string;
+  name?: string;
+}
+
 interface TickerSuggestionsProps {
-  suggestions: string[];
+  suggestions: TickerSuggestion[];
   onSelect: (ticker: string) => void;
   position: { top: number; left: number } | null;
   selectedIndex?: number;
@@ -24,20 +29,26 @@ export function TickerSuggestions({
         left: `${position.left}px`,
       }}
     >
-      {suggestions.map((ticker, index) => (
+      {suggestions.map((suggestion, index) => (
         <Button
-          key={ticker}
+          key={suggestion.ticker}
           variant="ghost"
           className={cx(
-            "w-full justify-start px-3 py-1.5 text-sm text-foreground hover:bg-muted-foreground/80"
+            "w-full justify-start px-3 py-1.5 text-sm text-foreground hover:bg-muted-foreground/80",
+            index === selectedIndex && "bg-muted",
           )}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onSelect(ticker);
+            onSelect(suggestion.ticker);
           }}
         >
-          {ticker}
+          <span className="font-medium">{suggestion.ticker}</span>
+          {suggestion.name && (
+            <span className="ml-2 text-muted-foreground truncate">
+              {suggestion.name}
+            </span>
+          )}
         </Button>
       ))}
     </div>

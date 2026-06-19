@@ -64,7 +64,7 @@ export function StockScreenerTable({
 
     if (typeof value === 'number') {
       const currencySymbol = currency === 'USD' ? '$' : currency;
-      let formattedNumber;
+      let formattedNumber: string;
       
       // Format large numbers in millions/billions
       if (Math.abs(value) >= 1e9) {

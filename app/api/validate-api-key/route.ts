@@ -1,10 +1,14 @@
 import { z } from 'zod';
 
 import { auth } from '@/app/(auth)/auth';
-import { validateOpenAIKey } from '@/lib/server/validate-api-key';
+import {
+  validateFinancialDatasetsKey,
+  validateOpenAIKey,
+} from '@/lib/server/validate-api-key';
 
 const requestSchema = z.object({
   apiKey: z.string().min(1),
+  type: z.enum(['openai', 'financial']).default('openai'),
 });
 
 export async function POST(request: Request) {
@@ -24,6 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await validateOpenAIKey(parsed.data.apiKey);
+  const result =
+    parsed.data.type === 'financial'
+      ? await validateFinancialDatasetsKey(parsed.data.apiKey)
+      : await validateOpenAIKey(parsed.data.apiKey);
   return Response.json(result);
 }

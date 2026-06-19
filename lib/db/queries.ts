@@ -1,5 +1,6 @@
 import 'server-only';
 
+import crypto from 'node:crypto';
 import { genSaltSync, hashSync } from 'bcrypt-ts';
 import { and, asc, desc, eq, gte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -13,10 +14,6 @@ import {
   message,
   vote,
 } from './schema';
-
-// Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
@@ -220,7 +217,7 @@ export async function deleteMessagesByChatIdAfterTimestamp({
   }
 }
 
-export async function updateChatVisiblityById({
+export async function updateChatVisibilityById({
   chatId,
   visibility,
 }: {
@@ -233,4 +230,39 @@ export async function updateChatVisiblityById({
     console.error('Failed to update chat visibility in database');
     throw error;
   }
+}
+
+export async function migrateChatsToUser({
+  fromUserId,
+  toUserId,
+}: {
+  fromUserId: string;
+  toUserId: string;
+}) {
+  if (fromUserId === toUserId) return;
+
+  try {
+    return await db
+      .update(chat)
+      .set({ userId: toUserId })
+      .where(eq(chat.userId, fromUserId));
+  } catch (error) {
+    console.error('Failed to migrate chats to user');
+    throw error;
+  }
+}
+
+export async function getOrCreateOAuthUser(email: string): Promise<User> {
+  const existing = await getUser(email);
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  const randomPassword = crypto.randomBytes(16).toString('hex');
+  await createUser(email, randomPassword);
+  const [newUser] = await getUser(email);
+  if (!newUser) {
+    throw new Error('Failed to create OAuth user');
+  }
+  return newUser;
 }

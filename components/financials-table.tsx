@@ -188,7 +188,10 @@ export function FinancialsTable({
       .join(' ');
   };
 
-  const headerTitle = title ? `${ticker} (${title} • ${formatPeriod(data[0].period!)})` : `${ticker} (${formatPeriod(data[0].period!)})`;
+  const periodLabel = data[0].period ?? 'ttm';
+  const headerTitle = title
+    ? `${ticker} (${title} • ${formatPeriod(periodLabel)})`
+    : `${ticker} (${formatPeriod(periodLabel)})`;
 
   return (
     <Accordion type="single" collapsible className="w-full">

@@ -1,8 +1,10 @@
 'use client';
-import { ChevronUp, Settings, Sun, Moon, Key } from 'lucide-react';
+import { ChevronUp, Settings, Sun, Moon, Key, Github } from 'lucide-react';
 import type { User } from 'next-auth';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+
+import { signInWithGitHub } from '@/app/(auth)/actions';
 
 import {
   DropdownMenu,
@@ -18,9 +20,18 @@ import {
 } from '@/components/ui/sidebar';
 import { ApiKeysModal } from '@/components/api-keys-modal';
 
-export function SidebarUserNav({ user }: { user: User }) {
+export function SidebarUserNav({
+  user,
+  githubAuthEnabled = false,
+}: {
+  user: User;
+  githubAuthEnabled?: boolean;
+}) {
   const { setTheme, theme } = useTheme();
   const [isApiKeysModalOpen, setIsApiKeysModalOpen] = useState(false);
+  const [isSigningIn, startSignInTransition] = useTransition();
+
+  const isAnonymous = user.email?.endsWith('@auto.generated');
 
   return (
     <>
@@ -50,6 +61,20 @@ export function SidebarUserNav({ user }: { user: User }) {
                 {`Toggle ${theme === 'light' ? 'dark' : 'light'} mode`}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {githubAuthEnabled && isAnonymous && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  disabled={isSigningIn}
+                  onSelect={() => {
+                    startSignInTransition(async () => {
+                      await signInWithGitHub();
+                    });
+                  }}
+                >
+                  <Github className="mr-2 size-4" />
+                  Sign in with GitHub
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <button
                   type="button"

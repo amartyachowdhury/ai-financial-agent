@@ -1,6 +1,8 @@
 'use server';
 
-import { signIn } from './auth';
+import { cookies } from 'next/headers';
+
+import { auth, signIn } from './auth';
 
 export interface EnsureSessionState {
   status: 'idle' | 'success' | 'failed';
@@ -21,4 +23,24 @@ export async function ensureSession(
   } catch {
     return { status: 'failed' };
   }
+}
+
+/**
+ * Signs in with GitHub and migrates anonymous chat history to the OAuth account.
+ */
+export async function signInWithGitHub() {
+  const session = await auth();
+  const cookieStore = await cookies();
+
+  if (session?.user?.id) {
+    cookieStore.set('migrate_from_user_id', session.user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 600,
+    });
+  }
+
+  await signIn('github', { redirectTo: '/' });
 }
